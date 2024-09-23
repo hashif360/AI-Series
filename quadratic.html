@@ -1,0 +1,185 @@
+<html>
+<head>
+    <title>Non-Linear Regression: Work, Sleep, and Productivity</title>
+    <style>
+        body { display: flex; justify-content: space-between; align-items: flex-start; } 
+        canvas { border: 1px solid black; margin-top: 20px; }
+        #training-box { border: 1px solid gray; padding: 20px; width: 300px; height: 400px; overflow-y: auto; margin-left: 20px; font-family: Arial, sans-serif; font-size: 14px; }
+        #training-box h2 { font-size: 16px; }
+    </style>
+</head>
+<body>
+    <div>
+        <h1>AI Model: Work, Sleep, and Productivity with Visualization</h1>
+        <p>The graph shows how work and sleep affect productivity. The training progress is displayed on the right.</p>
+
+        <!-- Canvas to draw the graph -->
+        <canvas id="myCanvas" width="600" height="400"></canvas>
+    </div>
+
+    <!-- Box to display the training progress -->
+    <div id="training-box">
+        <h2>Training Progress</h2>
+        <div id="progress-content"></div>
+    </div>
+
+    <script>
+    // Training data: hours worked (input) and productivity (output)
+    const data = [
+        { work: 2, productivity: 10 },
+        { work: 4, productivity: 15 },
+        { work: 6, productivity: 20 },
+        { work: 8, productivity: 25 },
+        { work: 10, productivity: 21 },
+        { work: 12, productivity: 15 },
+        { work: 14, productivity: 3 }
+    ];
+
+    // Initialize parameters for the quadratic function (y = ax^2 + bx + c)
+    let a = Math.random() * -1;  // Negative value to ensure the curve comes down after peaking
+    let b = Math.random();       // Positive to make productivity increase at first
+    let c = Math.random() * 50;  // Base intercept
+
+    // Learning rate is smaller now to prevent exploding parameters
+    const learningRate = 0.00001;  // Much smaller learning rate
+    const epochs = 5000;  // Number of training epochs
+
+    // Regularization rate (increase to prevent large parameters)
+    const regularizationRate = 0.1;
+
+    // Function to clip gradients to avoid extremely large updates
+    function clipGradient(gradient, limit) {
+        if (gradient > limit) return limit;
+        if (gradient < -limit) return -limit;
+        return gradient;
+    }
+
+    // This function predicts productivity based on hours worked (quadratic function)
+    function predict(work) {
+        return a * work ** 2 + b * work + c;  // y = ax^2 + bx + c
+    }
+
+    // Loss function: Mean Squared Error (MSE)
+    function computeLoss() {
+        let totalError = 0;
+        for (let i = 0; i < data.length; i++) {
+            const x = data[i].work;
+            const y = data[i].productivity;
+            const yPred = predict(x);  // Model's prediction
+            totalError += (y - yPred) ** 2;  // Squared error
+        }
+        return totalError / data.length;  // Mean of squared errors
+    }
+
+    // Gradient descent: Adjust the parameters (a, b, c) to minimize the loss
+    function train() {
+        const progressContent = document.getElementById("progress-content");
+
+        for (let epoch = 0; epoch < epochs; epoch++) {
+            let aGradient = 0;  // Gradient for parameter 'a'
+            let bGradient = 0;  // Gradient for parameter 'b'
+            let cGradient = 0;  // Gradient for parameter 'c'
+
+            // Loop through the dataset to compute gradients
+            for (let i = 0; i < data.length; i++) {
+                const x = data[i].work;
+                const y = data[i].productivity;
+                const yPred = predict(x);
+
+                // Calculate gradients for a, b, and c
+                aGradient += -2 * x ** 2 * (y - yPred);
+                bGradient += -2 * x * (y - yPred);
+                cGradient += -2 * (y - yPred);
+            }
+
+            // Apply regularization to prevent overfitting and large parameters
+            aGradient += 2 * regularizationRate * a;
+            bGradient += 2 * regularizationRate * b;
+            cGradient += 2 * regularizationRate * c;
+
+            // Clip gradients to prevent them from exploding
+            const clipLimit = 100;  // Set a reasonable limit for gradients
+            aGradient = clipGradient(aGradient / data.length, clipLimit);
+            bGradient = clipGradient(bGradient / data.length, clipLimit);
+            cGradient = clipGradient(cGradient / data.length, clipLimit);
+
+            // Update parameters
+            a -= aGradient * learningRate;
+            b -= bGradient * learningRate;
+            c -= cGradient * learningRate;
+
+            // Display progress every 500 epochs
+            if (epoch % 500 === 0) {
+                const loss = computeLoss().toFixed(5);  // Compute current loss
+                const progressText = `
+                    Epoch ${epoch}: <br>
+                    Loss = ${loss},<br>
+                    a = ${a.toFixed(5)},<br> 
+                    b = ${b.toFixed(5)},<br> 
+                    c = ${c.toFixed(5)}<br><br>
+                `;
+                progressContent.innerHTML += progressText;  // Display training progress
+            }
+        }
+    }
+
+    // Start training the model
+    train();
+
+    // Function to draw the graph (the data points and the predicted curve)
+    function draw() {
+        const canvas = document.getElementById("myCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // Clear the canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Scale for drawing (hours worked and productivity)
+        const maxX = 16;  // Maximum hours for the X-axis
+        const maxY = 60;  // Maximum productivity for the Y-axis
+        const scaleX = canvas.width / maxX;  // Scale for X-axis
+        const scaleY = canvas.height / maxY;  // Scale for Y-axis
+
+        // Draw dataset points (blue dots)
+        ctx.fillStyle = "blue";
+        ctx.font = "12px Arial";
+        data.forEach(point => {
+            const x = point.work * scaleX;
+            const y = canvas.height - (point.productivity * scaleY);  // Inverted Y-axis
+
+            // Draw circle for each data point
+            ctx.beginPath();
+            ctx.arc(x, y, 5, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Add labels with hours worked and productivity
+            ctx.fillText(`(${point.work}, ${point.productivity})`, x + 10, y - 10);
+        });
+
+        // Draw the predicted curve (quadratic line)
+        ctx.strokeStyle = "red";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let x = 0; x <= maxX; x += 0.1) {
+            const y = predict(x);  // Predict productivity using the model
+            const canvasX = x * scaleX;
+            const canvasY = canvas.height - (y * scaleY);  // Inverted Y-axis
+
+            // Ensure the Y value is within the canvas bounds
+            if (y >= 0 && y <= maxY) {
+                if (x === 0) {
+                    ctx.moveTo(canvasX, canvasY);  // Start the curve
+                } else {
+                    ctx.lineTo(canvasX, canvasY);  // Draw the curve
+                }
+            }
+        }
+        ctx.stroke();  // Finish drawing the curve
+    }
+
+    // Make sure to call draw() after the training process
+    draw();
+</script>
+
+</body>
+</html>
