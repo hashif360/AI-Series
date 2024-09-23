@@ -8,6 +8,7 @@
         canvas { border: 1px solid black; margin-top: 20px; }
         #training-box { border: 1px solid gray; padding: 20px; width: 300px; height: 400px; overflow-y: auto; margin-left: 20px; font-family: Arial, sans-serif; font-size: 14px; }
         #training-box h2 { font-size: 16px; }
+        #prediction-box { margin-top: 20px; font-family: Arial, sans-serif; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -17,6 +18,15 @@
 
         <!-- This is the canvas where we will draw the graph (our chart) -->
         <canvas id="myCanvas" width="600" height="400"></canvas>
+
+        <!-- Prediction box for user input -->
+        <div id="prediction-box">
+            <h2>Predict Marks</h2>
+            <label for="hours-input">Enter hours studied:</label>
+            <input type="number" id="hours-input" step="0.1" min="0">
+            <button onclick="makePrediction()">Predict</button>
+            <p id="prediction-result"></p>
+        </div>
     </div>
 
     <!-- This box will show the training progress (like how the model is learning step by step) -->
@@ -26,7 +36,7 @@
     </div>
 
     <script>
-        //This is our training data with hours studied and marks achieved
+        // This is our training data with hours studied and marks achieved
         const data = [
             { hours: 1, mark: 2 },  // Example: 1 hour of study, 2 marks
             { hours: 2, mark: 4 },  // 2 hours of study, 4 marks
@@ -47,8 +57,8 @@
 
         // This function will predict the marks based on hours studied
         function predict(hours) {
-            const rawPrediction = m * hours + b;  // Formula: y = mx + b   #remember, line equation??
-            return Math.min(rawPrediction, 50);  // Limiting the max marks to 50, even if they study a lot you cant mark more marks that full marks
+            const rawPrediction = m * hours + b;  // Formula: y = mx + b
+            return Math.min(rawPrediction, 50);  // Limiting the max marks to 50
         }
 
         // This function calculates the loss, which is the difference between the actual marks and predicted marks
@@ -58,7 +68,7 @@
                 const x = data[i].hours;
                 const y = data[i].mark;
                 const yPred = predict(x);  // What the model thinks the marks should be
-                totalError += (y - yPred) ** 2;  // Squared error: how far off the prediction is
+                totalError += (y - yPred) ** 2;  // Squared error
             }
             return totalError / data.length;  // Average the error across all data points
         }
@@ -150,9 +160,15 @@
             ctx.stroke();  // Finish drawing the line
         }
 
+        // Function to handle prediction when the user inputs hours and clicks the button
+        function makePrediction() {
+            const hoursInput = document.getElementById("hours-input").value;
+            const result = predict(Number(hoursInput)).toFixed(2);  // Get the prediction result
+            document.getElementById("prediction-result").textContent = `Predicted marks: ${result}`;
+        }
+
         // Draw the graph and the prediction line
         draw();
-
     </script>
 </body>
 </html>
