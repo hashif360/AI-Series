@@ -57,8 +57,8 @@
 
         // This function will predict the marks based on hours studied
         function predict(hours) {
-            const rawPrediction = m * hours + b;  // Formula: y = mx + b
-            return Math.min(rawPrediction, 50);  // Limiting the max marks to 50
+            const rawPrediction = m * hours + b;  // Formula: y = mx + b    #remember, line equation??
+            return Math.min(rawPrediction, 50);  // Limiting the max marks to 50   # you cant get more than full marks no matter how much you study
         }
 
         // This function calculates the loss, which is the difference between the actual marks and predicted marks
