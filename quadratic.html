@@ -6,6 +6,7 @@
         canvas { border: 1px solid black; margin-top: 20px; }
         #training-box { border: 1px solid gray; padding: 20px; width: 300px; height: 400px; overflow-y: auto; margin-left: 20px; font-family: Arial, sans-serif; font-size: 14px; }
         #training-box h2 { font-size: 16px; }
+        #input-box { margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -15,6 +16,15 @@
 
         <!-- Canvas to draw the graph -->
         <canvas id="myCanvas" width="600" height="400"></canvas>
+
+        <!-- Input box for user to enter hours and get prediction -->
+        <div id="input-box">
+            <h2>Predict Productivity</h2>
+            <label for="hoursInput">Enter Hours Worked: </label>
+            <input type="number" id="hoursInput" min="0" max="24" step="0.1">
+            <button id="predictButton">Predict</button>
+            <p id="predictionResult"></p>
+        </div>
     </div>
 
     <!-- Box to display the training progress -->
@@ -177,9 +187,21 @@
         ctx.stroke();  // Finish drawing the curve
     }
 
-    // Make sure to call draw() after the training process
+    // Calling draw() after the training process
     draw();
-</script>
+
+    // Add event listener for the predict button
+    document.getElementById("predictButton").addEventListener("click", function() {
+        const hoursInput = document.getElementById("hoursInput").value;
+        const hours = parseFloat(hoursInput);
+        if (!isNaN(hours) && hours >= 0) {
+            const predictedProductivity = predict(hours).toFixed(2);
+            document.getElementById("predictionResult").innerText = `Predicted Productivity: ${predictedProductivity}`;
+        } else {
+            document.getElementById("predictionResult").innerText = 'Please enter a valid number of hours.';
+        }
+    });
+    </script>
 
 </body>
 </html>
