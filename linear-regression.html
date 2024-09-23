@@ -1,0 +1,158 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Linear Regression AI model</title>
+    <style>
+        body { display: flex; justify-content: space-between; align-items: flex-start; } 
+        canvas { border: 1px solid black; margin-top: 20px; }
+        #training-box { border: 1px solid gray; padding: 20px; width: 300px; height: 400px; overflow-y: auto; margin-left: 20px; font-family: Arial, sans-serif; font-size: 14px; }
+        #training-box h2 { font-size: 16px; }
+    </style>
+</head>
+<body>
+    <div>
+        <h1>Simple Linear Regression AI model</h1>
+        <p>The graph on the left shows the dataset in a cartesian plane and the model's prediction line. The training progress is displayed on the right box.</p>
+
+        <!-- This is the canvas where we will draw the graph (our chart) -->
+        <canvas id="myCanvas" width="600" height="400"></canvas>
+    </div>
+
+    <!-- This box will show the training progress (like how the model is learning step by step) -->
+    <div id="training-box">
+        <h2>Training Progress</h2>
+        <div id="progress-content"></div>
+    </div>
+
+    <script>
+        //This is our training data with hours studied and marks achieved
+        const data = [
+            { hours: 1, mark: 2 },  // Example: 1 hour of study, 2 marks
+            { hours: 2, mark: 4 },  // 2 hours of study, 4 marks
+            { hours: 3, mark: 6 },  // etc...
+            { hours: 4, mark: 8 },
+            { hours: 5, mark: 10 },
+            { hours: 9, mark: 25 },
+            { hours: 17, mark: 25 }
+        ];
+
+        // Initializing the slope (m) and intercept (b) randomly (the line starts randomly and will adjust)
+        let m = Math.random(); // Slope tells us how steep the line is
+        let b = Math.random(); // Intercept is the starting point of the line when hours are 0
+
+        // We will control how fast the model learns with the learning rate and the number of steps it takes (epochs)
+        const learningRate = 0.01;  // Learning rate is how fast the model learns
+        const epochs = 1000;  // Epochs are the number of times we train on the whole dataset
+
+        // This function will predict the marks based on hours studied
+        function predict(hours) {
+            const rawPrediction = m * hours + b;  // Formula: y = mx + b   #remember, line equation??
+            return Math.min(rawPrediction, 50);  // Limiting the max marks to 50, even if they study a lot you cant mark more marks that full marks
+        }
+
+        // This function calculates the loss, which is the difference between the actual marks and predicted marks
+        function computeLoss() {
+            let totalError = 0;
+            for (let i = 0; i < data.length; i++) {
+                const x = data[i].hours;
+                const y = data[i].mark;
+                const yPred = predict(x);  // What the model thinks the marks should be
+                totalError += (y - yPred) ** 2;  // Squared error: how far off the prediction is
+            }
+            return totalError / data.length;  // Average the error across all data points
+        }
+
+        // This function trains the model. It adjusts the slope (m) and intercept (b) to make better predictions.
+        function train() {
+            const progressContent = document.getElementById("progress-content");  // This is where we will show the progress
+
+            for (let epoch = 0; epoch < epochs; epoch++) {
+                let mGradient = 0;  // Gradient is how much we should change the slope
+                let bGradient = 0;  // Gradient is how much we should change the intercept
+
+                // Go through each point in the data to adjust the slope and intercept
+                for (let i = 0; i < data.length; i++) {
+                    const x = data[i].hours;
+                    const y = data[i].mark;
+                    const yPred = predict(x);
+
+                    // Calculate how much we need to adjust slope and intercept
+                    mGradient += -2 * x * (y - yPred);
+                    bGradient += -2 * (y - yPred);
+                }
+
+                // Update the slope (m) and intercept (b) using gradient descent
+                m -= (mGradient / data.length) * learningRate;  // Adjust the slope
+                b -= (bGradient / data.length) * learningRate;  // Adjust the intercept
+
+                // Show progress every 100 steps (epochs)
+                if (epoch % 100 === 0) {
+                    const loss = computeLoss().toFixed(5);  // Loss (error) gets smaller as the model learns
+                    const progressText = `
+                        Epoch ${epoch}: <br>
+                        Loss = ${loss},<br> 
+                        Slope (m) = ${m.toFixed(5)},<br> 
+                        Intercept (b) = ${b.toFixed(5)}<br><br>
+                    `;
+                    progressContent.innerHTML += progressText;  // Display progress in the box on the right
+                }
+            }
+        }
+
+        // Start training the model (adjusting the line)
+        train();
+
+        // Function to draw the graph and the line on the canvas
+        function draw() {
+            const canvas = document.getElementById("myCanvas");
+            const ctx = canvas.getContext("2d");
+
+            // Clear the canvas before drawing
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // We are setting up the scale for the graph (how many pixels per hour/marks)
+            const maxX = 20;  // We will display hours up to 20 on the X-axis
+            const maxY = 50;  // We will display marks up to 50 on the Y-axis
+            const scaleX = canvas.width / maxX;  // Scale for X-axis
+            const scaleY = canvas.height / maxY;  // Scale for Y-axis
+
+            // Now, let's draw the actual points from the dataset (blue dots)
+            ctx.fillStyle = "blue";
+            ctx.font = "12px Arial";
+            data.forEach(point => {
+                const x = point.hours * scaleX;
+                const y = canvas.height - (point.mark * scaleY);  // Inverted Y-axis to match Cartesian plane
+
+                // Draw a small circle for each point
+                ctx.beginPath();
+                ctx.arc(x, y, 5, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // Label the points with the hours and marks
+                ctx.fillText(`(${point.hours}, ${point.mark})`, x + 10, y - 10);
+            });
+
+            // Now, let's draw the red line for the model's prediction (the straight line)
+            ctx.strokeStyle = "red";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let x = 0; x <= maxX; x += 0.1) {
+                const y = predict(x);  // Use the model to predict the marks for each hour
+                const canvasX = x * scaleX;
+                const canvasY = canvas.height - (y * scaleY);  // Inverted Y-axis
+                if (x === 0) {
+                    ctx.moveTo(canvasX, canvasY);  // Start the line
+                } else {
+                    ctx.lineTo(canvasX, canvasY);  // Draw the line
+                }
+            }
+            ctx.stroke();  // Finish drawing the line
+        }
+
+        // Draw the graph and the prediction line
+        draw();
+
+    </script>
+</body>
+</html>
